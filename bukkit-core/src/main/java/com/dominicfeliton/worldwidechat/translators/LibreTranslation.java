@@ -23,6 +23,8 @@ import java.util.concurrent.ExecutorService;
 
 public class LibreTranslation extends BasicTranslation {
 
+    private static final String USER_AGENT = "WorldwideChat/1.51 (DrakesCraft; LibreTranslate client)";
+
     private final String serviceUrl;
     private final String apiKey;
 
@@ -60,6 +62,7 @@ public class LibreTranslation extends BasicTranslation {
                 HttpURLConnection conn = (HttpURLConnection) url.openConnection();
 
                 conn.setRequestMethod("GET");
+                configureConnection(conn);
                 conn.setRequestProperty("Content-Type", "application/json");
                 conn.connect();
 
@@ -71,7 +74,7 @@ public class LibreTranslation extends BasicTranslation {
                 if (listResponseCode == HttpURLConnection.HTTP_OK) {
                     // Scan response
                     StringBuilder inLine = new StringBuilder();
-                    Scanner scanner = new Scanner(url.openStream());
+                    Scanner scanner = new Scanner(conn.getInputStream());
 
                     while (scanner.hasNext()) {
                         inLine.append(scanner.nextLine());
@@ -136,6 +139,7 @@ public class LibreTranslation extends BasicTranslation {
                 URL url = new URL(serviceUrl + "/detect");
                 HttpURLConnection httpConn = (HttpURLConnection) url.openConnection();
                 httpConn.setRequestMethod("POST");
+                configureConnection(httpConn);
 
                 httpConn.setRequestProperty("accept", "application/json");
                 httpConn.setRequestProperty("Content-Type", "application/x-www-form-urlencoded");
@@ -189,6 +193,7 @@ public class LibreTranslation extends BasicTranslation {
             URL url = new URL(serviceUrl + "/translate");
             HttpURLConnection httpConn = (HttpURLConnection) url.openConnection();
             httpConn.setRequestMethod("POST");
+            configureConnection(httpConn);
 
             httpConn.setRequestProperty("accept", "application/json");
             httpConn.setRequestProperty("Content-Type", "application/x-www-form-urlencoded");
@@ -240,6 +245,16 @@ public class LibreTranslation extends BasicTranslation {
             }
             return textToTranslate;
         }
+    }
+
+    /**
+     * Identifies the Java client to reverse proxies and prevents a stalled endpoint from holding
+     * a translation worker forever. Some managed WAFs reject the default Java user agent.
+     */
+    private static void configureConnection(HttpURLConnection connection) {
+        connection.setRequestProperty("User-Agent", USER_AGENT);
+        connection.setConnectTimeout(10_000);
+        connection.setReadTimeout(20_000);
     }
 }
 
