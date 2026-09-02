@@ -13,13 +13,13 @@
   <dependencies>
     <dependency>
       <groupId>org.mockbukkit.mockbukkit</groupId>
-      <artifactId>mockbukkit-v26.1.2</artifactId>
+      <artifactId>${mockbukkit.artifact}</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>io.papermc.paper</groupId>
       <artifactId>paper-api</artifactId>
-      <version>${mockbukkit.paper.api.version}</version>
+      <version>${paper.api.version}</version>
       <scope>test</scope>
     </dependency>
     <dependency>

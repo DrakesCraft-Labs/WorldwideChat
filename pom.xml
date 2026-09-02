@@ -28,8 +28,8 @@
     <jackson.annotations.version>2.22</jackson.annotations.version>
     <junit.jupiter.version>6.1.0</junit.jupiter.version>
     <maven.compiler.release>21</maven.compiler.release>
-    <mockbukkit.paper.api.version>26.1.2.build.69-stable</mockbukkit.paper.api.version>
-    <mockbukkit.version>4.113.2</mockbukkit.version>
+    <mockbukkit.artifact>mockbukkit-v1.21</mockbukkit.artifact>
+    <mockbukkit.version>4.116.3</mockbukkit.version>
     <mongock.version>5.5.1</mongock.version>
     <paper.api.version>1.21.11-R0.1-SNAPSHOT</paper.api.version>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -83,7 +83,7 @@
       </dependency>
       <dependency>
         <groupId>org.mockbukkit.mockbukkit</groupId>
-        <artifactId>mockbukkit-v26.1.2</artifactId>
+        <artifactId>${mockbukkit.artifact}</artifactId>
         <version>${mockbukkit.version}</version>
       </dependency>
     </dependencies>
