@@ -634,9 +634,21 @@ public class ConfigurationHandler {
     }
 
     /* Translator Settings */
+    private volatile boolean translatorConnectionFailed = false;
+
+    /**
+     * True si el ultimo loadTranslatorSettings quedo en Invalid teniendo un traductor
+     * habilitado en la config, es decir, si el fallo fue de conexion y no de
+     * configuracion vacia. Solo en ese caso tiene sentido reintentar mas tarde.
+     */
+    public boolean translatorConnectionFailed() {
+        return translatorConnectionFailed;
+    }
+
     public String loadTranslatorSettings() {
         String outName = "Invalid";
         String attemptedTranslator = "";
+        boolean translatorEnabled = false;
         final int maxTries = 3;
         for (int tryNumber = 1; tryNumber <= maxTries; tryNumber++) {
             if (refs.serverIsStopping()) return outName;
@@ -646,6 +658,7 @@ public class ConfigurationHandler {
                         ""));
                 for (Map.Entry<String, String> eaPair : CommonRefs.translatorPairs.entrySet()) {
                     if (mainConfig.getBoolean(eaPair.getKey())) {
+                        translatorEnabled = true;
                         attemptedTranslator = eaPair.getValue();
                         refs.getTranslatorResult(eaPair.getValue(), true);
                         outName = eaPair.getValue();
@@ -658,7 +671,14 @@ public class ConfigurationHandler {
                 e.printStackTrace();
                 outName = "Invalid";
             }
+            // Sin traductor habilitado no hay nada que reintentar: repetir solo
+            // gastaria avisos que no cambian el resultado. Los reintentos no se
+            // espacian aqui porque este metodo corre en el hilo principal (tanto en
+            // el arranque como en /wwc reload); el espaciado lo pone el reintento
+            // diferido de WorldwideChat, que no bloquea el servidor.
+            if (!translatorEnabled) break;
         }
+        translatorConnectionFailed = translatorEnabled && outName.equals("Invalid");
         if (outName.equals("Invalid")) {
             main.getLogger().severe(refs.getPlainMsg("wwcInvalidTranslator"));
         } else {

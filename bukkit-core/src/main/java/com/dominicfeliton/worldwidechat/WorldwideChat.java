@@ -102,6 +102,11 @@ public class WorldwideChat extends JavaPlugin {
 
     private volatile String translatorName = "Starting";
 
+    /** Tope de recargas diferidas cuando el traductor no responde al arrancar. */
+    private static final int MAX_DEFERRED_TRANSLATOR_RETRIES = 3;
+
+    private final AtomicInteger deferredTranslatorRetries = new AtomicInteger(0);
+
     /* Config values */
     private Component pluginPrefix = defaultPluginPrefix();
 
@@ -473,6 +478,41 @@ public class WorldwideChat extends JavaPlugin {
 
         // Finish by setting translator name, which permits plugin usage ("Starting" does not)
         translatorName = tempTransName;
+
+        // Un traductor inalcanzable durante el arranque (proxy que todavia no acepta
+        // trafico) dejaba el plugin apagado hasta el siguiente reinicio del servidor.
+        if (translatorName.equals("Invalid") && configurationManager.translatorConnectionFailed()) {
+            scheduleDeferredTranslatorRetry();
+        } else {
+            deferredTranslatorRetries.set(0);
+        }
+    }
+
+    /**
+     * Reprograma una recarga completa del plugin cuando el arranque dejo el traductor
+     * en Invalid por un fallo de conexion. Los intentos se espacian 1, 2 y 3 minutos y
+     * se detienen al recuperar el traductor o al agotar el maximo, para no recargar en
+     * bucle si la configuracion es la que esta mal.
+     */
+    private void scheduleDeferredTranslatorRetry() {
+        final int attempt = deferredTranslatorRetries.incrementAndGet();
+        if (attempt > MAX_DEFERRED_TRANSLATOR_RETRIES) {
+            getLogger().severe("El traductor sigue inalcanzable tras " + MAX_DEFERRED_TRANSLATOR_RETRIES
+                    + " reintentos diferidos. Revisa la config o usa /wwc reload cuando vuelva.");
+            return;
+        }
+        final int delaySeconds = 60 * attempt;
+        getLogger().warning("Traductor inalcanzable en el arranque. Reintento diferido "
+                + attempt + "/" + MAX_DEFERRED_TRANSLATOR_RETRIES + " en " + delaySeconds + "s.");
+        GenericRunnable retry = new GenericRunnable() {
+            @Override
+            protected void execute() {
+                // Otro reload pudo recuperarlo mientras esperabamos.
+                if (!translatorName.equals("Invalid")) return;
+                reload(null, false);
+            }
+        };
+        wwcHelper.runSync(true, delaySeconds * 20, retry, GLOBAL, null);
     }
 
     /**
